@@ -4,6 +4,7 @@ from typing import Tuple
 
 from praktika.info import Info
 from praktika.utils import Shell
+from ci.jobs.scripts.ci_agent import CIAgent, SECTION_CHANGELOG
 
 LABEL_CATEGORIES = {
     "pr-backward-incompatible": ["Backward Incompatible Change"],
@@ -160,8 +161,38 @@ def check_category(pr_body: str) -> Tuple[bool, str]:
             description_error = "Changelog category is empty"
         elif normalize_category(category) not in CATEGORIES_FOLD:
             description_error = f"Category '{category}' is not valid"
-        elif not entry and "(changelog entry is not required)" not in category:
-            description_error = f"Changelog entry required for category '{category}'"
+        else:
+            # If entry is required by category, validate with support for new markers
+            if "(changelog entry is not required)" not in category:
+                # Consider entry empty if it only contains HTML comments or whitespace
+                entry_no_comments = re.sub(
+                    r"<!--.*?-->", "", entry or "", flags=re.DOTALL
+                ).strip()
+
+                # Use CIAgent logic to detect if we should process the changelog section (generation or formatting)
+                agent = CIAgent()
+                # Ensure the agent operates on the provided PR body
+                assert agent.info.pr_body == pr_body
+                should_process, (_should_format, _marker_content_unused) = (
+                    agent.should_process_section(SECTION_CHANGELOG)
+                )
+
+                # Also allow if there is actual content inside markers (even if not enabled)
+                marker_content, _ = agent.extract_content_and_format_flag(
+                    pr_body or "", SECTION_CHANGELOG
+                )
+                marker_content = re.sub(
+                    r"<!--.*?-->", "", marker_content or "", flags=re.DOTALL
+                ).strip()
+
+                # Valid if:
+                # - there is actual content in the entry header block; OR
+                # - CIAgent indicates processing should occur (enabled=true with empty content, or format_only=true with content); OR
+                # - there is some actual content inside markers regardless of enabled flag
+                if not (entry_no_comments or should_process or marker_content):
+                    description_error = (
+                        f"Changelog entry required for category '{category}'"
+                    )
 
     print(description_error)
     return not description_error, category

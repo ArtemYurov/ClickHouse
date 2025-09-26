@@ -3,7 +3,7 @@ import sys
 
 from praktika.info import Info
 
-from ci.jobs.scripts.ci_agent import CIAgent
+from ci.jobs.scripts.ci_agent import CIAgent, SECTION_DESCRIPTION, SECTION_CHANGELOG
 from ci.praktika.gh import GH
 from ci.praktika.result import Result
 from ci.praktika.utils import Shell, Utils
@@ -45,10 +45,10 @@ if __name__ == "__main__":
         file.write(pr_diff)
 
     should_process_description, description_params = agent.should_process_section(
-        "BEGIN_DESCRIPTION"
+        SECTION_DESCRIPTION
     )
     should_process_changelog, changelog_params = agent.should_process_section(
-        "BEGIN_CHANGELOG_ENTRY"
+        SECTION_CHANGELOG
     )
 
     # Check for cached API errors in the PR body content (from previous failed runs)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
                 )
                 results.append(Result(testname, "OK"))
             updated_pr_body = agent.insert_content_between_tags(
-                updated_pr_body, "BEGIN_DESCRIPTION", updated_description
+                updated_pr_body, SECTION_DESCRIPTION, updated_description
             )
         except RuntimeError as e:
             if "API Error: " in str(e):
@@ -111,7 +111,7 @@ if __name__ == "__main__":
             Result(
                 testname,
                 Result.Status.SKIPPED,
-                "Skipping PR description formatting / autogeneration. Either no tags were found, or the tags have body text but format=false",
+                "Skipping PR description processing. Either the section is disabled, not present, or already contains user-provided content.",
             )
         )
 
@@ -132,7 +132,7 @@ if __name__ == "__main__":
                 )
                 results.append(Result(testname, "OK"))
             updated_pr_body = agent.insert_content_between_tags(
-                updated_pr_body, "BEGIN_CHANGELOG_ENTRY", updated_changelog_entry
+                updated_pr_body, SECTION_CHANGELOG, updated_changelog_entry
             )
         except RuntimeError as e:
             if "API Error: " in str(e):
@@ -147,7 +147,7 @@ if __name__ == "__main__":
             Result(
                 testname,
                 Result.Status.SKIPPED,
-                "Skipping PR changelog entry formatting / autogeneration. Either no tags were found, or the tags have body text but format=false",
+                "Skipping PR changelog entry processing. Either the section is disabled, not present, or already contains user-provided content.",
             )
         )
 

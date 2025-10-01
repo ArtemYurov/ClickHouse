@@ -856,6 +856,8 @@ void PostgreSQLHandler::processSyncQuery()
     {
         std::unique_ptr<PostgreSQLProtocol::Messaging::SyncQuery> query =
             message_transport->receive<PostgreSQLProtocol::Messaging::SyncQuery>();
+
+        prepared_statements_manager.clearBindQuery();
     }
     catch (const Exception & e)
     {

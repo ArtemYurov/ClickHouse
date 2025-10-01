@@ -1714,6 +1714,11 @@ public:
         bind_query.reset();
     }
 
+    void clearBindQuery()
+    {
+        bind_query.reset();
+    }
+
 private:
     std::unordered_map<String, String> statements;
     std::optional<size_t> limit_statements;
